@@ -31,10 +31,10 @@ def set_config():
         }
     else:
         config = {
-            'user': os.environ['LOCAL_DB_USER'],
-            'password': os.environ['LOCAL_DB_PASS'],
-            'host': os.environ['TEST_HOST'],
-            'database': os.environ['TEST_DB'],
+            'user': 'root',
+            'password': 'MEN1Zeero00',
+            'host': 'localhost',
+            'database': 'test_skybright',
         }
         return config
 
@@ -69,10 +69,7 @@ def send_message(msg):
         return result
     except Exception as exc:
         # logging the error in the log
-        err = "send Email Log error\n" \
-              " user %s \n" \
-              "Exception: %s" % (__name__, exc.args)
-        logging_error(err)
+        logging_error(exc)
 
 
 def is_moon(date_):
@@ -142,7 +139,7 @@ def get_path_to_file(tle_, date_, folder_):
     global config_file
     cfg = configparser.ConfigParser()
     cfg.read(config_file)
-    return cfg['DATA_PATH']['data'] + tle_ + '/' + date_[:4] + '/' + date_ + '/' + folder_ + '/'
+    return cfg['DATA_PATH']['data'] + tle_ + '/' + date_ + '/' + folder_ + '/'
 
 
 def to_date_and_time(date_str):
@@ -299,27 +296,26 @@ def read_skybrightness(filename, path_to_file):
 
                 full_list.append(list_)
 
-            except ValueError:
-                bad_file = True
-                pass
             except:
-                if __name__ == '__main__':
-
-                    logging_error("this is that error")
+                if len(list_) < 8:
+                    pass
+                else:
+                    bad_file = True
+                    logging_error(Exception)
     if __name__ != "__main__":
         return full_list
+
+    if bad_file:
+            message = """\nFilename %s contains data not handled properly \n
+                    \nPlease check file %s \n Path: %s %s\n
+                    and run script manually to continue with database updating.\n
+                    \n
+                """ % (filename, filename, path_to_file, filename)
+            send_message(build_message(sender, reciever,
+                                       'SkyBright: Bad file', message))
+            sys.exit(0)
     else:
-        if bad_file:
-                message = """\nFilename %s contains data not handled properly \n
-                        \nPlease check file %s \n Path: %s %s\n
-                        and run script manually to continue with database updating.\n
-                        \n
-                    """ % (filename, filename, path_to_file, filename)
-                send_message(build_message(sender, reciever,
-                                           'SkyBright: Bad file', message))
-                sys.exit(0)
-        else:
-            insert_skybright(full_list)
+        insert_skybright(full_list)
 
 
 def read_extinctions(filename, path_to_file):
@@ -342,16 +338,11 @@ def read_extinctions(filename, path_to_file):
                 list_.append(float("{0: .2f}".format(float(data[6]))))  # air mass
                 list_.append(filter_band)                               # filter band
                 list_.append(telescope)                                 # telescope
-
                 full_list.append(list_)
 
-            except ValueError:
-                pass
             except:
-                if __name__ == '__main__':
-                    logging_error(str(Exception.args) + "this is that error 2" + __name__)
-                    raise
-                    pass
+                logging_error(Exception)
+                pass
 
     if __name__ != "__main__":
         return full_list
@@ -387,7 +378,7 @@ def read_day():
                 if FileNotFoundError:
                     pass
                 else:
-                    logging_error(str(Exception.args) + "this is that error 4")
+                    logging_error(Exception)
 
         is_it_rise = update_last_date(get_last_updated_directory(tele_), config['TELESCOPE']['rise_name'])
         is_it_set = update_last_date(get_last_updated_directory(tele_), config['TELESCOPE']['set_name'])
