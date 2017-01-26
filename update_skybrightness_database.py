@@ -3,7 +3,12 @@ import configparser
 import os
 import re
 import mysql.connector
-import numpy as np
+#from smtplib import SMTP_SSL as SMTP
+import smtplib
+import sys
+from email.mime.text import MIMEText
+
+email = os.environ['SKYBRIGHT_LOGGING_MAIL_TO_ADDRESSES']
 
 config_file = os.path.abspath(__file__)
 config_file = re.sub('update_skybrightness_database.py$', 'configurations.ini', config_file)
@@ -11,40 +16,114 @@ config_file = re.sub('update_skybrightness_database.py$', 'configurations.ini', 
 config1 = configparser.ConfigParser()
 config1.read(config_file)
 
-config = {
-    'user': config1['MYSQL_CONN']['username'],
-    'password': config1['MYSQL_CONN']['password'],
-    'host': config1['MYSQL_CONN']['host'],
-    'database': config1['MYSQL_CONN']['db'],
-    'charset': config1['MYSQL_CONN']['charset']
-    }
+sender = os.environ['SKY_SENDER']
+reciever = os.environ['SKY_RECEIVER']
+
+
+def set_config():
+    if __name__ == '__main__':
+        config = {
+            'user': config1['MYSQL_CONN']['username'],
+            'password': config1['MYSQL_CONN']['password'],
+            'host': config1['MYSQL_CONN']['host'],
+            'database': config1['MYSQL_CONN']['db'],
+            'charset': config1['MYSQL_CONN']['charset']
+        }
+    else:
+        config = {
+            'user': 'root',
+            'password': 'MEN1Zeero00',
+            'host': 'localhost',
+            'database': 'test_skybright',
+        }
+        return config
+
+
+def logging_error(error_):
+    date_ = datetime.now()
+    err_msg = "\n\nDate and time: %s \n%s" % (str(date_), error_)
+    f = open("Error_log.txt", 'a')
+    f.write(err_msg)
+    f.close()
+
+
+def build_message(send, receipt, subject, massage):
+    text = massage
+    msg = MIMEText(text, 'plain')
+    msg['Subject'] = subject
+    msg['From'] = send
+    msg['To'] = ",".join(receipt)
+    return msg
+
+
+def send_message(msg):
+    me = os.environ['SKYBRIGHT_LOGGING_MAIL_TO_ADDRESSES']
+    try:
+        server = smtplib.SMTP("smtp.saao.ac.za")
+
+        try:
+            result = server.sendmail(msg['From'], msg['To'].split(","), msg.as_string())
+        finally:
+            server.quit()
+
+        return result
+    except Exception as exc:
+        # logging the error in the log
+        logging_error(exc)
 
 
 def is_moon(date_):
+    global email
     import ephem
     suth = ephem.Observer()
 
     suth.date = date_
 
-    suth.lon = str(20.810694444444444)
-    suth.lat = str(-32.37686111111111)
-    suth.elev = 1460
-    beg_twilight = suth.next_rising(ephem.Moon(), use_center=True)  # Begin civil twilight
-    end_twilight = suth.next_setting(ephem.Moon(), use_center=True)  # End civil twilight
-    if end_twilight < beg_twilight:
-        beg_twilight = suth.previous_rising(ephem.Moon(), use_center=True)
-    return 0 if datetime.strptime(date_, "%Y-%m-%d %H:%M:%S") <= beg_twilight.datetime() \
-                or datetime.strptime(date_, "%Y-%m-%d %H:%M:%S") >= end_twilight.datetime() \
-        else 1
+    try:
+        suth.lon = str(20.810694444444444)
+        suth.lat = str(-32.37686111111111)
+        suth.elev = 1460
+
+        beg_twilight = suth.next_rising(ephem.Moon(), use_center=True)  # Begin civil twilight
+        end_twilight = suth.next_setting(ephem.Moon(), use_center=True)  # End civil twilight
+        if end_twilight < beg_twilight:
+            beg_twilight = suth.previous_rising(ephem.Moon(), use_center=True)
+        return 0 if datetime.strptime(date_, "%Y-%m-%d %H:%M:%S") <= beg_twilight.datetime() \
+                    or datetime.strptime(date_, "%Y-%m-%d %H:%M:%S") >= end_twilight.datetime() \
+            else 1
+    except Exception as exc:
+        if __name__ == "__main__":
+            massage = ("\nError was found on finding moon of date %s\n\n Exception is %s"
+                       "\nplease find out what went wrong.\n\nSkyBright Error Log") % (date_, exc)
+
+            send_message(build_message(email, email, "Skybright: Is Moon Fail", massage))
+            logging_error(exc)
+        return -1
 
 
-def add_day(str_):
-    date_ = datetime(int(str_[0:4]), int(str_[4:6]), int(str_[6:])) + timedelta(days=1)
-    val = str(date_)[0:4] + str(date_)[5:7] + str(date_)[8:10]
-    return val
+def next_date_directory(str_):
+    try:
+        date_ = datetime(int(str_[0:4]), int(str_[4:6]), int(str_[6:])) + timedelta(days=1)
+        val = str(date_)[0:4] + str(date_)[5:7] + str(date_)[8:10]
+        return val
+    except Exception as exc:
+        if __name__ == "__main__":
+            massage = """
+                Directory %s represent no date
+                or data in %s is not recorded
+
+                Please find out what went wrong
+
+                Exception: %s
+            """ % (str_, str_, exc)
+
+            send_message(build_message(email, email, "Skybright: Next Date Directory", massage))
+            logging_error(exc)
+            sys.exit(0)
+        return -1
 
 
-def get_last_update_date(telescope):
+def get_last_updated_directory(telescope):
     global config_file
     config = configparser.ConfigParser()
     config.read(config_file)
@@ -56,11 +135,11 @@ def get_last_update_date(telescope):
         return None
 
 
-def get_path_to_file(tele_, date_, folder_):
+def get_path_to_file(tle_, date_, folder_):
     global config_file
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    return config['DATA_PATH']['data'] + tele_ + '/' + date_ + '/' + folder_ + '/'
+    cfg = configparser.ConfigParser()
+    cfg.read(config_file)
+    return cfg['DATA_PATH']['data'] + tle_ + '/' + date_ + '/' + folder_ + '/'
 
 
 def to_date_and_time(date_str):
@@ -93,7 +172,7 @@ def update_last_date(current_date, telescope):
     path_ = config['DATA_PATH']['data'] + telescope
     dirs = os.listdir(path_)
     date_ = 'date_rise' if telescope == config['TELESCOPE']['rise_name'] else 'date_set'
-    next_day = add_day(current_date)
+    next_day = next_date_directory(current_date)
 
     for file in dirs:
         if current_date < file and file.startswith('20'):
@@ -111,28 +190,42 @@ def insert_skybright(skybright):
         :param skybright: data to insert to the database
         :return: None
     '''
-    add_sb = ("INSERT INTO SkyBrightness"
+
+    add_sb = ("INSERT INTO SkyBrightness "
               "(DATE_TIME, SKYBRIGHTNESS, SB_ERROR, MOON, FILTER_BAND, POSX, TELESCOPE, CLOUD_COVERAGE)"
               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+    config = set_config()
 
     try:
-        cnx = mysql.connector.connect(**config)
-        cursor = cnx.cursor()
+        conn = mysql.connector.connect(**config)
+        cursor = conn.cursor()
         cursor.executemany(add_sb, skybright)
-        cnx.commit()
+        conn.commit()
 
     except mysql.connector.Error as err:
+
         if "Duplicate entry" in err.msg:
-            print('SB duplicate')
+            pass
         else:
-            print('SB Fail!!')
-            print(err.msg, "SB")
-        if cnx:
-            cnx.rollback()
+            if __name__ == '__main__':
+                message = """\nFailed to insert data to the database.\n
+                        \nPlease check data and run script manually to update database.\n
+                        \nError message:
+                        \n%s\n\nData List:\n%s\n
+                    """ % (err.msg, skybright)
+                send_message(build_message(sender, reciever,
+                                           'SkyBright: Fail update database', message))
+                logging_error(err.msg)
+                if conn:
+                    conn.rollback()
+                logging_error(err.msg)
+                sys.exit(0)
+        if conn:
+            conn.rollback()
 
     finally:
-        if cnx:
-            cnx.close()
+        if conn:
+            conn.close()
 
 
 def insert_extinctions(extinctions):
@@ -146,6 +239,7 @@ def insert_extinctions(extinctions):
                "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)")
 
     try:
+        config = set_config()
         cnx = mysql.connector.connect(**config)
         cursor = cnx.cursor()
         cursor.executemany(add_ext, extinctions)
@@ -153,45 +247,19 @@ def insert_extinctions(extinctions):
 
     except mysql.connector.Error as err:
         if "Duplicate entry" in err.msg:
-            print('EXT duplict')
-        elif "Not enough parameters" in err.msg:
-            print('EXT param')
-        else:
-            print('EXT Fail!!')
-            print(err.msg, "EXT")
-        if cnx:
-            cnx.rollback()
-
-    finally:
-        if cnx:
-            cnx.close()
-
-'''
-def insert_extinctions_reduced(reduced_extinctions):
-
-
-        :param reduced_extinctions:  data to insert to the database
-        :return: None
-
-
-    cnx = mysql.connector.connect()
-    add_ext_red = ("INSERT INTO Ext_Reduced"
-                   "(DATE_TIME, EXTINCTION, EXT_ERROR, FILTER_BAND, TELESCOPE, CLOUD_COVERAGE, MOON)"
-                   "VALUES(%s, %s, %s, %s, %s, %s, %s)")
-    try:
-        cnx = mysql.connector.connect(**config)
-        cursor = cnx.cursor()
-        cursor.execute(add_ext_red, reduced_extinctions)
-
-        cnx.commit()
-
-    except mysql.Error as err:
-        if "Duplicate entry" in err.msg:
-            pass
-        elif "Not enough parameters" in err.msg:
             pass
         else:
-            print(err.msg, "EXT")
+            if __name__ == '__main__':
+                message = """\nFailed to insert data to the database.\n
+                        \nPlease check data and run script manually to update database.\n
+                        \nError message:\n%s\n\nData List:\n%s\n
+                    """ % (err.msg, extinctions)
+                send_message(build_message(sender, reciever,
+                                           'SkyBright: Fail update database(Extinctions)', message))
+                if cnx:
+                    cnx.rollback()
+                    logging_error(err.msg)
+                sys.exit(0)
         if cnx:
             cnx.rollback()
 
@@ -200,46 +268,6 @@ def insert_extinctions_reduced(reduced_extinctions):
             cnx.close()
 
 
-def update_ext_cc():
-    update_ext = ("UPDATE Ext_Reduced e "
-                  "SET e.CLOUD_COVERAGE = ( "
-                  "     SELECT s.CLOUD_COVERAGE "
-                  "     FROM SkyBright s "
-                  "     ORDER BY ABS( "
-                  "                     TIMESTAMPDIFF(SECOND, s.DATE_TIME, e.DATE_TIME) "
-                  "                 ) "
-                  "     LIMIT 1 ) "
-                  "WHERE e.DATE_TIME > 101 ")
-
-    try:
-        cnx = mysql.connector.connect(**config)
-        print("connected #")
-        cursor = cnx.cursor()
-        print("cursor found # ")
-        cursor.execute(update_ext)
-        cnx.commit()
-        print( "commited #")
-
-    except mysql.connector.Error as err:
-        print("Error")
-        if "Duplicate entry" in err.msg:
-            print('EXT Duplict #')
-        elif "Not enough parameters" in err.msg:
-            print('EXT param #')
-        else:
-            print('EXT Fail #')
-            print(err)
-        if cnx:
-            print("rolling back #")
-            cnx.rollback()
-
-    finally:
-        if cnx:
-            cnx.close()
-            print("one done #")
-'''
-
-# ++++++++++++++++ READ directory++++++++
 def read_skybrightness(filename, path_to_file):
     '''
         :param filename: name of the file that need to be read
@@ -247,6 +275,7 @@ def read_skybrightness(filename, path_to_file):
         :return: None
     '''
     full_list = []  # a list of elements to insert to the skybrightness table
+    bad_file = False
 
     telescope = find_telescope(path_to_file)
     os.chdir(path_to_file)  # change dir to where the file is located
@@ -269,11 +298,24 @@ def read_skybrightness(filename, path_to_file):
 
             except:
                 if len(list_) < 8:
-                    print(filename, data[0], "Fail to append list")
+                    pass
                 else:
-                    print(list_)
+                    bad_file = True
+                    logging_error(Exception)
+    if __name__ != "__main__":
+        return full_list
 
-    insert_skybright(full_list)
+    if bad_file:
+            message = """\nFilename %s contains data not handled properly \n
+                    \nPlease check file %s \n Path: %s %s\n
+                    and run script manually to continue with database updating.\n
+                    \n
+                """ % (filename, filename, path_to_file, filename)
+            send_message(build_message(sender, reciever,
+                                       'SkyBright: Bad file', message))
+            sys.exit(0)
+    else:
+        insert_skybright(full_list)
 
 
 def read_extinctions(filename, path_to_file):
@@ -298,30 +340,15 @@ def read_extinctions(filename, path_to_file):
                 list_.append(telescope)                                 # telescope
                 full_list.append(list_)
 
-                #deviation_list.append(float("{0: .2f}".format(float(data[3]))))
-                #median_list.append(float("{0: .2f}".format(float(data[2]))))
             except:
+                logging_error(Exception)
                 pass
-    '''
-    try:
-        if len(median_list) > 0 and len(deviation_list) > 0:
-            # DATE_TIME, EXTINCTION, EXT_ERROR, FILTER_BAND, TELESCOPE, CLOUD_COVERAGE(200 default)
-            reduced_list.append(full_list[0][0])
-            reduced_list.append(float("{0: .2f}".format(np.median(median_list))))
-            reduced_list.append(float("{0: .2f}".format(np.std(median_list))))
-            reduced_list.append(filter_band)
-            reduced_list.append(telescope)
-            reduced_list.append(200.0)
-            reduced_list.append(is_moon(str(full_list[0][0])))
-    except:
-        pass
-    '''
+
+    if __name__ != "__main__":
+        return full_list
 
     if len(full_list) > 0:
         insert_extinctions(full_list)
-
-    #if len(reduced_list) > 0:
-    #    insert_extinctions_reduced(reduced_list)
 
 
 def read_day():
@@ -334,7 +361,7 @@ def read_day():
         for p in range(4):
             tele_ = config['TELESCOPE']['rise_name'] if p == 0 or p == 1 else config['TELESCOPE']['set_name']
             folder_ = config['FOLDER']['sky'] if p == 0 or p == 2 else config['FOLDER']['ext']
-            date_ = get_last_update_date(tele_)
+            date_ = get_last_updated_directory(tele_)
             path = get_path_to_file(tele_, date_, folder_)
             try:
 
@@ -351,11 +378,10 @@ def read_day():
                 if FileNotFoundError:
                     pass
                 else:
-                    print(Exception)
+                    logging_error(Exception)
 
-        is_it_rise = update_last_date(get_last_update_date(tele_), config['TELESCOPE']['rise_name'])
-        is_it_set = update_last_date(get_last_update_date(tele_), config['TELESCOPE']['set_name'])
-        print(get_last_update_date('astmonsunrise'))
+        is_it_rise = update_last_date(get_last_updated_directory(tele_), config['TELESCOPE']['rise_name'])
+        is_it_set = update_last_date(get_last_updated_directory(tele_), config['TELESCOPE']['set_name'])
 
 if __name__ == "__main__":
     read_day()
