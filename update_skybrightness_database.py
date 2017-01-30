@@ -3,7 +3,6 @@ import configparser
 import os
 import re
 import mysql.connector
-#from smtplib import SMTP_SSL as SMTP
 import smtplib
 import sys
 from email.mime.text import MIMEText
@@ -36,7 +35,7 @@ def set_config():
             'host': os.environ['TEST_HOST'],
             'database': os.environ['TEST_DB'],
         }
-        return config
+    return config
 
 
 def logging_error(error_):
@@ -238,8 +237,8 @@ def insert_extinctions(extinctions):
     '''
 
     add_ext = ("INSERT INTO Extinctions"
-               "(DATE_TIME, STAR, EXTINCTION, EXT_ERROR,  X_POS,  Y_POS,  AIRMASS,  FILTER_BAND, TELESCOPE)"
-               "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)")
+               "(DATE_TIME, STAR, EXTINCTION, EXT_ERROR,  X_POS,  Y_POS,  AIRMASS,  FILTER_BAND, TELESCOPE, MOON)"
+               "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
 
     try:
         config = set_config()
@@ -288,23 +287,23 @@ def read_skybrightness(filename, path_to_file):
             try:
                 data = line.split()
                 # DATE_TIME, SKYBRIGHTNESS, SB_ERROR, MOON, FILTER_BAND, POSX, TELESCOPE, CLOUD_COVERAGE
-                list_.append(to_date_and_time(data[0]))                 # date and time
-                list_.append(float("{0: .2f}".format(float(data[5]))))  # Sky brightness
-                list_.append(float("{0: .2f}".format(float(data[6]))))  # SB error
-                list_.append(is_moon(to_date_and_time(data[0])))        # moon
-                list_.append(filename[10])                              # filter band
-                list_.append(int(filename[22]))                         # position key
-                list_.append(telescope)                                 # telescope
-                list_.append(float("{0: .1f}".format(float(data[8]) * 100)))  # Cloud coverage
+                # this order must be like as in insert SQL query.
+                list_.append(to_date_and_time(data[0]))                         # date and time
+                list_.append(float("{0: .2f}".format(float(data[5]))))          # Sky brightness
+                list_.append(float("{0: .2f}".format(float(data[6]))))          # SB error
+                list_.append(int(data[7]))                                      # moon
+                list_.append(filename[10])                                      # filter band
+                list_.append(int(filename[22]))                                 # position key
+                list_.append(telescope)                                         # telescope
+                list_.append(float("{0: .1f}".format(float(data[8]) * 100)))    # Cloud coverage
 
                 full_list.append(list_)
 
             except ValueError:
-                bad_file = True
                 pass
             except:
                 if __name__ == '__main__':
-
+                    bad_file = True
                     logging_error("this is that error")
     if __name__ != "__main__":
         return full_list
@@ -342,6 +341,7 @@ def read_extinctions(filename, path_to_file):
                 list_.append(float("{0: .2f}".format(float(data[6]))))  # air mass
                 list_.append(filter_band)                               # filter band
                 list_.append(telescope)                                 # telescope
+                list_.append(is_moon(to_date_and_time(data[0])))        # moon
 
                 full_list.append(list_)
 
