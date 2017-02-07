@@ -1,5 +1,5 @@
 import unittest
-import update_skybrightness_database as usd
+import functions as fn
 import os, re
 
 path_ = os.path.abspath(__file__)
@@ -81,55 +81,54 @@ class TestUpdateFlow(unittest.TestCase):
         remove_file('ExtJohnson_B20160603-012834.txt')
 
     def test_read_data_file(self):
-        result = usd.read_skybrightness('SBJohnson_V20160601Pos0.txt', path_)
-        expected = [['2016-06-01 21:00:10', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-01 21:00:11', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-01 21:00:12', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-01 21:00:13', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-01 21:00:14', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-01 21:00:15', 20.01, 0.15, 0, 'V', 0, -1, 21.0]
+        result = fn.create_skybrightness('SBJohnson_V20160601Pos0.txt', path_, mode)
+        expected = [['2016-06-01 21:00:10', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-01 21:00:11', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-01 21:00:12', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-01 21:00:13', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-01 21:00:14', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-01 21:00:15', 20.01, 0.15, 0, 'V', 0, 0, 21.0]
                     ]
         self.assertListEqual(result, expected)
 
-        result = usd.read_skybrightness('SBJohnson_V20160602Pos0.txt', path_)
-        expected = [['2016-06-02 22:00:10', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-02 22:00:11', 20.01, 0.15, 0, 'V', 0, -1, 21.0],
-                    ['2016-06-02 22:00:13', 20.01, 0.15, 0, 'V', 0, -1, 21.0]
+        result = fn.create_skybrightness('SBJohnson_V20160602Pos0.txt', path_, mode)
+        expected = [['2016-06-02 22:00:10', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-02 22:00:11', 20.01, 0.15, 0, 'V', 0, 0, 21.0],
+                    ['2016-06-02 22:00:13', 20.01, 0.15, 0, 'V', 0, 0, 21.0]
                     ]
         self.assertListEqual(result, expected)
 
-        result = usd.read_skybrightness('SBJohnson_V20160604Pos0.txt', path_)
+        result = fn.create_skybrightness('SBJohnson_V20160604Pos0.txt', path_, mode)
         expected = []
         self.assertListEqual(result, expected)
 
     def test_read_ext(self):
-        result = usd.read_extinctions("ExtJohnson_B20160601-012834.txt", path_)
-        expected = [['2016-06-01 21:00:35', 'test_star', 0.38, 0.01, 735, 610, 2.26, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.38, 0.00, 138, 292, 4.12, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.32, 0.00, 155, 330, 4.13, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.43, 0.01, 171, 501, 2.61, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.47, 0.01, 180, 623, 2.22, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.42, 0.01, 188, 699, 2.20, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.48, 0.01, 190, 825, 1.88, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.19, 0.02, 166, 658, 1.69, 'B', -1],
-                    ['2016-06-01 21:00:35', 'test_star', 0.35, 0.01, 211, 117, 2.36, 'B', -1]
+        result = fn.create_extinctions("ExtJohnson_B20160601-012834.txt", path_, mode)
+        expected = [['2016-06-01 21:00:35', 'test_star', 0.38, 0.01, 735, 610, 2.26, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.38, 0.00, 138, 292, 4.12, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.32, 0.00, 155, 330, 4.13, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.43, 0.01, 171, 501, 2.61, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.47, 0.01, 180, 623, 2.22, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.42, 0.01, 188, 699, 2.20, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.48, 0.01, 190, 825, 1.88, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.19, 0.02, 166, 658, 1.69, 'B', 0, 0],
+                    ['2016-06-01 21:00:35', 'test_star', 0.35, 0.01, 211, 117, 2.36, 'B', 0, 0]
                     ]
         self.assertListEqual(result, expected)
 
-        result = usd.read_extinctions("ExtJohnson_B20160602-012834.txt", path_)
-        expected = [['2016-06-02 21:00:35', 'test_star', 0.38, 0.00, 138, 292, 4.12, 'B', -1],
-                    ['2016-06-02 21:00:35', 'test_star', 0.43, 0.01, 171, 501, 2.61, 'B', -1],
-                    ['2016-06-02 21:00:35', 'test_star', 0.42, 0.01, 188, 699, 2.20, 'B', -1],
-                    ['2016-06-02 21:00:35', 'test_star', 0.48, 0.01, 190, 825, 1.88, 'B', -1]
+        result = fn.create_extinctions("ExtJohnson_B20160602-012834.txt", path_, mode)
+        expected = [['2016-06-02 21:00:35', 'test_star', 0.38, 0.00, 138, 292, 4.12, 'B', 0, 0],
+                    ['2016-06-02 21:00:35', 'test_star', 0.43, 0.01, 171, 501, 2.61, 'B', 0, 0],
+                    ['2016-06-02 21:00:35', 'test_star', 0.42, 0.01, 188, 699, 2.20, 'B', 0, 0],
+                    ['2016-06-02 21:00:35', 'test_star', 0.48, 0.01, 190, 825, 1.88, 'B', 0, 0]
                     ]
         self.assertListEqual(result, expected)
 
-        result = usd.read_extinctions("ExtJohnson_B20160603-012834.txt", path_)
+        result = fn.create_extinctions("ExtJohnson_B20160603-012834.txt", path_, mode)
         expected = []
         self.assertListEqual(result, expected)
 
-
-
 if __name__ == "__main__":
+    mode = fn.TEST
     unittest.main()
 

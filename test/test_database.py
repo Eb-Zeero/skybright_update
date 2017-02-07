@@ -1,6 +1,7 @@
 import mysql.connector
 import os
-import update_skybrightness_database
+import update_database as ud
+import functions as fn
 import unittest
 
 
@@ -13,17 +14,23 @@ class TestSkyBrightDatabase(unittest.TestCase):
         """
         Setup a temporary table in the test database
         """
-        config = update_skybrightness_database.set_config()
+        config = fn.set_config(fn.TEST)
         conn = mysql.connector.connect(**config)
         cursor = conn.cursor()
 
         # create a table
+        cursor.execute("""CREATE TABLE IF NOT EXISTS Extinctions
+                        (DATE_TIME datetime, STAR text, EXTINCTION float, EXT_ERROR float, X_POS int, Y_POS int,
+                        AIRMASS float, FILTER_BAND char, TELESCOPE int, MOON int)
+                        """)
+        conn.commit()
         cursor.execute("""CREATE TABLE IF NOT EXISTS SkyBrightness
                           (DATE_TIME datetime, SKYBRIGHTNESS float, SB_ERROR float,
                            MOON int, FILTER_BAND text, POSX int, TELESCOPE int, CLOUD_COVERAGE float)
                        """)
-        ""
         conn.commit()
+        "'2012-01-02 12:11:00', 'test-star', 1.0, 0.01, 2000, 1000, 1500, 'V', 0, 0"
+
         cursor.close()
         conn.close()
 
@@ -31,7 +38,7 @@ class TestSkyBrightDatabase(unittest.TestCase):
         """
         Delete the temporary table
         """
-        config = update_skybrightness_database.set_config()
+        config = fn.set_config(fn.TEST)
         conn = mysql.connector.connect(**config)
         cursor = conn.cursor()
 
@@ -41,13 +48,13 @@ class TestSkyBrightDatabase(unittest.TestCase):
         conn.close()
 
     def test_database_connection(self):
-        config = update_skybrightness_database.set_config()
+        config = fn.set_config(fn.TEST)
         conn = mysql.connector.connect(**config)
         conn.close()
         self.assertTrue(True)
 
     def test_skyBright_insert(self):
-        config = update_skybrightness_database.set_config()
+        config = fn.set_config(fn.TEST)
 
         def select_skybright(date_):
             conn = mysql.connector.connect(**config)
@@ -62,15 +69,15 @@ class TestSkyBrightDatabase(unittest.TestCase):
             conn.close()
             return result
 
-        update_skybrightness_database.insert_skybright([['2012-01-02 12:11:00', 20.0, 0.01, 1, 'V', 0, 0, 20.0],
-                                                        ['2012-01-02 12:11:00', 21.0, 0.02, 1, 'V', 0, 0, 20.0]])
+        ud.insert_skybright([['2012-01-02 12:11:00', 20.0, 0.01, 1, 'V', 0, 0, 20.0],
+                             ['2012-01-02 12:11:00', 21.0, 0.02, 1, 'V', 0, 0, 20.0]], mode)
 
         actual = select_skybright('2012-01-02 12:11:00')
         expected = [(20.0, 0.01, 1, 'V', 0, 0, 20.0), (21.0, 0.02, 1, 'V', 0, 0, 20.0)]
         self.assertListEqual(expected, actual)
 
     def test_extinctions_insert(self):
-        config = update_skybrightness_database.set_config()
+        config = fn.set_config(mode)
 
         def select_extinctions(date_):
             conn = mysql.connector.connect(**config)
@@ -85,11 +92,10 @@ class TestSkyBrightDatabase(unittest.TestCase):
             conn.close()
             return result
 
-        update_skybrightness_database.insert_extinctions([
-            ['2012-01-02 12:11:00', 'test-star', 1.0, 0.01, 2000, 1000, 1500, 'V', 0],
-            ['2012-01-02 12:11:00', 'test-star', 1.1, 0.01, 2000, 1000, 1500, 'V', 0],
-            ['2012-01-02 12:11:00', 'test-star', 1.2, 0.01, 2000, 1000, 1500, 'V', 0]
-        ])
+        ud.insert_extinctions([['2012-01-02 12:11:00', 'test-star', 1.0, 0.01, 2000, 1000, 1500, 'V', 0, 0],
+                               ['2012-01-02 12:11:00', 'test-star', 1.1, 0.01, 2000, 1000, 1500, 'V', 0, 0],
+                               ['2012-01-02 12:11:00', 'test-star', 1.2, 0.01, 2000, 1000, 1500, 'V', 0, 0]
+                               ], mode)
 
         actual = select_extinctions('2012-01-02 12:11:00')
         expected = [('test-star', 1.0, 0.01, 2000, 1000, 1500, 'V', 0),
@@ -100,4 +106,5 @@ class TestSkyBrightDatabase(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    mode = fn.TEST
     unittest.main()

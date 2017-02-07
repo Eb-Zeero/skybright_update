@@ -1,7 +1,10 @@
 configurations.ini
 !/configurations.ini
 /configurations.ini
-/test/Error_log.txt
 __pycache__/database_conn.cpython-35.pyc
 __pycache__/send_email2.cpython-35.pyc
-test/Error_log.txt
+.idea'.idea'
+.idea/
+Error_log.txt
+__pycache__/functions.cpython-35.pyc
+__pycache__/update_database.cpython-35.pyc
