@@ -261,9 +261,8 @@ def start():
                 else:
                     logging_error()
                     logging.exception("Unknown Error")
-                    send_message(
-                        fn.build_message(sender, receiver, "SkyBright: Unknown Error",
-                                         fn.message("something-else")))
+                    send_message(fn.build_message(sender, receiver, "SkyBright: Unknown Error",
+                                                  fn.message("something-else")))
                     sys.exit(0)
 
         read_rise = fn.update_last_date(fn.get_last_updated_directory(tele_), config['TELESCOPE']['rise_name'])
