@@ -1,0 +1,7 @@
+# Created by .ignore support plugin (hsz.mobi)
+/.gitignore
+/.idea/
+__pycache__/
+configurations.ini
+test/Error_log.txt
+/Error_log.txt
