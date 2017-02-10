@@ -8,10 +8,10 @@ import sys
 import logging
 import configparser
 
-script_dir = os.path.dirname(__file__)
+script_file = os.path.dirname(__file__)
+script_dir = os.path.join("/home/nhlavutelo", script_file)
 config_file = os.path.join(script_dir, 'configurations.ini')
 error_log = os.path.join(script_dir, 'Error_log.txt')
-
 config1 = configparser.ConfigParser()
 config1.read(config_file)
 
@@ -249,7 +249,9 @@ def start():
                 :director_list_y will be data moved to a year folder
                 :director_list_y will be data not in the year folder
                 """
-                director_list_y = os.listdir(file_path_y)  #
+
+                director_list_y = os.listdir(file_path_y)
+                print(1, end=' ')  #
                 for file in director_list_y: # read subdirectory and file in directory path
                     if dir_ == config['FOLDER']['sky']:
                         if file.endswith('.dat') and file.startswith('SBJohnson'):
@@ -260,7 +262,22 @@ def start():
                         if file.endswith('.dat') and file.startswith('ExtJohnson'):
                             ext_main(file, file_path_y)
 
+
+            except:
+                if FileNotFoundError:
+                    pass
+                else:
+                    error_time()
+                    logging.exception("Unknown Error")
+                    send_message(
+                        fn.build_message(sender, receiver, "SkyBright: Unknown Error",
+                                         fn.message("something-else")))
+                    sys.exit(0)
+
+            try:
+
                 director_list = os.listdir(file_path_)
+                print(2, end=' ')
                 for file in director_list:
                     if dir_ == config['FOLDER']['sky']:
                         if file.endswith('.dat') and file.startswith('SBJohnson'):
@@ -279,10 +296,17 @@ def start():
                         fn.build_message(sender, receiver, "SkyBright: Unknown Error",
                                          fn.message("something-else")))
                     sys.exit(0)
-
-        read_rise = fn.update_last_date(fn.get_last_updated_directory(tele_), config['TELESCOPE']['rise_name'])
-        read_set = fn.update_last_date(fn.get_last_updated_directory(tele_), config['TELESCOPE']['set_name'])
-        #  print(fn.get_last_updated_directory(tele_)) # debugging purpose to see progress
+        try:
+            read_rise = fn.update_last_date(fn.get_last_updated_directory(tele_), config['TELESCOPE']['rise_name'])
+            read_set = fn.update_last_date(fn.get_last_updated_directory(tele_), config['TELESCOPE']['set_name'])
+            print(fn.get_last_updated_directory(tele_), datetime.now())  # debugging purpose to see progress
+        except:
+            error_time()
+            logging.exception("Astmon data in use")
+            send_message(
+                fn.build_message(sender, receiver, "SkyBright: Unknown Error",
+                                 fn.message("permission")))
+            sys.exit(0)
 
 if __name__ == '__main__':
     mode = fn.DEPLOYMENT

@@ -1,15 +1,14 @@
 from datetime import datetime, timedelta
 import configparser
 import os
-import smtplib
 from email.mime.text import MIMEText
 
-script_dir = os.path.dirname(__file__)
+script_file = os.path.dirname(__file__)
+script_dir = os.path.join("/home/nhlavutelo", script_file)
 config_file = os.path.join(script_dir, 'configurations.ini')
 
 config1 = configparser.ConfigParser()
 config1.read(config_file)
-
 emial = config1['EMAIL']['sender']
 sender = config1['EMAIL']['sender']
 receiver = config1['EMAIL']['receiver']
@@ -188,9 +187,12 @@ def update_last_date(current_date, telescope):
     config = configparser.ConfigParser()
     config.read(config_file)
     path_ = config['DATA_PATH']['data'] + telescope
-    dirs = os.listdir(path_)
     date_ = 'date_rise' if telescope == config['TELESCOPE']['rise_name'] else 'date_set'
     next_day = next_date_directory(current_date)
+    try:
+        dirs = os.listdir(path_)
+    except:
+        raise PermissionError("Astmon data in use")
 
     for file in dirs:
         if current_date < file and file.startswith('20'):
@@ -300,5 +302,9 @@ def message(exp):
         msg = ("\nTime: %s\n\nFail to insert to the database please check error log for more details\n\nThis email "
                "will be send until this Error is resolved\nScrip is is stopped from running please run the script "
                "manually after the issue is solved\n\nSkyBright") % str(datetime.now())
+    if exp == "permission":
+        msg = ("\nTime: %s\n\nSkybright database update did not run at time above astmon data was still "
+               "updating \n Please run the script manually if need to update database\n\nSkyBright") \
+              % str(datetime.now())
 
     return msg
