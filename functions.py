@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 import configparser
 import os
 from email.mime.text import MIMEText
+import update_database
 
-script_file = os.path.dirname(__file__)
-script_dir = os.path.join("/home/nhlavutelo", script_file)
-config_file = os.path.join(script_dir, 'configurations.ini')
+config_file = update_database.config_file
+print('\nthis2:', config_file)
 
 config1 = configparser.ConfigParser()
 config1.read(config_file)
